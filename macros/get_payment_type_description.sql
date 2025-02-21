@@ -1,17 +1,17 @@
 {#
-    This macro returns the description of the payment type based on cleaned_payment_type.
+    This macro returns the description of the payment_type 
 #}
 
-{% macro get_payment_type_description(column_name) -%}
+{% macro get_payment_type_description(payment_type) -%}
 
-  CASE
-    WHEN {{ column_name }} = 1 THEN 'Credit card'
-    WHEN {{ column_name }} = 2 THEN 'Cash'
-    WHEN {{ column_name }} = 3 THEN 'No charge'
-    WHEN {{ column_name }} = 4 THEN 'Dispute'
-    WHEN {{ column_name }} = 5 THEN 'Unknown'
-    WHEN {{ column_name }} = 0 THEN 'Voided trip'
-    ELSE 'EMPTY'  
-  END
+    case {{ dbt.safe_cast("payment_type", api.Column.translate_type("integer")) }}  
+        when 1 then 'Credit card'
+        when 2 then 'Cash'
+        when 3 then 'No charge'
+        when 4 then 'Dispute'
+        when 5 then 'Unknown'
+        when 6 then 'Voided trip'
+        else 'EMPTY'
+    end
 
 {%- endmacro %}
