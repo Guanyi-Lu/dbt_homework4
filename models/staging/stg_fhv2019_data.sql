@@ -22,4 +22,5 @@ stg_fhv_tripdata as (
 )
 
 select * from stg_fhv_tripdata
+where dispatching_base_num is not null
 

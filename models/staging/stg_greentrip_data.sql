@@ -7,7 +7,7 @@
 with tripdata as (
     select *,
         row_number() over(partition by cast(VendorID as INT64), cast(lpep_pickup_datetime as timestamp)) as rn  -- Cast VendorID to INT64
-    from {{ source('staging','greentrip_data') }}
+    from {{ source('staging','greentrip_data') }} --source is in the dataset(database) already in bigquery
     where VendorID is not null 
 )
 select
