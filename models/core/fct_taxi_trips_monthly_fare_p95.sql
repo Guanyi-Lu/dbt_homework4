@@ -62,24 +62,21 @@ where  trips_unioned.fare_amount > 0
 and trips_unioned.trip_distance > 0
 and trips_unioned.payment_type_description in ('Cash', 'Credit card')
 ),
-percentiles as (
+percentiles as 
+(
 SELECT service_type, 
 PK_YEAR,
 PK_MONTH,
-APPROX_QUANTILES(fare_amount, 100) AS fare_percentiles
---Setting it to 100 ensures that you can extract any percentile value (like p90, p95, etc.) with good precision
+Round(PERCENTILE_CONT(fare_amount, 0.90) OVER (PARTITION BY service_type, PK_YEAR,PK_MONTH ),1) AS fare_percentiles_P90,
+Round(PERCENTILE_CONT(fare_amount, 0.95) OVER (PARTITION BY service_type, PK_YEAR,PK_MONTH ),1) AS fare_percentiles_P95,
+ROUND(PERCENTILE_CONT(fare_amount, 0.97) OVER (PARTITION BY service_type, PK_YEAR,PK_MONTH ),1) AS fare_percentiles_P97
 FROM target_table
-group by 1,2,3
-),
-PercentileValues AS (
-  SELECT
-        service_type,
-        PK_YEAR,
-        PK_MONTH,
-        percentile,
-        fare_percentiles[OFFSET(percentile)] AS approx_percentile_value
-    FROM Percentiles, UNNEST([90, 95, 97]) AS percentile
-    WHERE PK_YEAR=2020 AND PK_MONTH=4
 )
-SELECT * FROM PercentileValues ORDER BY service_type, PK_YEAR, PK_MONTH, percentile
+SELECT  SERVICE_TYPE,
+fare_percentiles_P90, 
+fare_percentiles_P95,
+fare_percentiles_P97 
+FROM percentiles
+WHERE PK_YEAR= 2020 AND PK_MONTH=4
+
 --green: {p97: 55.0, p95: 45.0, p90: 26.5}, yellow: {p97: 31.5, p95: 25.5, p90: 19.0}

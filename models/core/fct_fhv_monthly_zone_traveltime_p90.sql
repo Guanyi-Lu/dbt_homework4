@@ -23,9 +23,9 @@ target_table.pickup_location_id,
 target_table.dropoff_location_id,
 target_table.dropoff_zone,
 target_table.pickup_zone,
-APPROX_QUANTILES(trip_duration, 100) AS duration_percentiles
+PERCENTILE_CONT(trip_duration, 0.90) OVER (PARTITION BY PK_YEAR,PK_MONTH,pickup_location_id,dropoff_location_id ) AS trip_duration_P90
 FROM target_table
-group by 1,2,3,4,5,6
+
 ),
 final_table AS (
   SELECT
@@ -35,22 +35,21 @@ final_table AS (
     pickup_zone,
     pickup_location_id,
     dropoff_location_id,
-    duration_percentiles[OFFSET(90)] AS approx_percentile_value
+    trip_duration_P90
   FROM Percentiles
   WHERE PK_YEAR = 2019 
     AND PK_MONTH = 11 
     AND pickup_zone IN ('Newark Airport', 'SoHo', 'Yorkville East')
 ),
-ranked_table AS 
-(
+Rank_table as (
 
   SELECT 
     dropoff_zone,
     pickup_zone,
-    approx_percentile_value,
-    DENSE_RANK() OVER (PARTITION BY PK_YEAR, PK_MONTH, pickup_zone ORDER BY approx_percentile_value DESC) AS percentile_rank
+    trip_duration_P90,
+    DENSE_RANK() OVER (PARTITION BY PK_YEAR, PK_MONTH, pickup_zone ORDER BY trip_duration_P90 DESC) AS percentile_rank
   FROM final_table
 )
-SELECT dropoff_zone, pickup_zone, percentile_rank
-FROM ranked_table
-WHERE percentile_rank = 2
+select distinct dropoff_zone
+from Rank_table
+where percentile_rank=2
